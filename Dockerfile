@@ -1,6 +1,6 @@
 FROM openjdk:8-jdk
 
-RUN apt-get update && apt-get install -y git curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git curl ansible && rm -rf /var/lib/apt/lists/*
 
 ARG user=jenkins
 ARG group=jenkins
@@ -8,6 +8,8 @@ ARG uid=1000
 ARG gid=1000
 ARG http_port=8080
 ARG agent_port=50000
+ARG docker_group=docker
+ARG docker_gid=1005
 
 ENV JENKINS_HOME /var/jenkins_home
 ENV JENKINS_SLAVE_AGENT_PORT ${agent_port}
@@ -17,6 +19,10 @@ ENV JENKINS_SLAVE_AGENT_PORT ${agent_port}
 # ensure you use the same uid
 RUN groupadd -g ${gid} ${group} \
     && useradd -d "$JENKINS_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user}
+
+# -----------------> Docker group
+RUN groupadd -g ${docker_gid} ${docker_group} && usermod -aG ${docker_group} ${user}
+# -----------------> Docker group
 
 # Jenkins home directory is a volume, so configuration and build history 
 # can be persisted and survive image upgrades
@@ -38,10 +44,10 @@ COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/tcp-slave-agent-port.groov
 
 # jenkins version being bundled in this docker image
 ARG JENKINS_VERSION
-ENV JENKINS_VERSION ${JENKINS_VERSION:-2.60.3}
+ENV JENKINS_VERSION ${JENKINS_VERSION:-2.86}
 
 # jenkins.war checksum, download will be validated using it
-ARG JENKINS_SHA=2d71b8f87c8417f9303a73d52901a59678ee6c0eefcf7325efed6035ff39372a
+ARG JENKINS_SHA=207aac187882bcddf665cdee78daa2fd8642f94c02d731b9ea18fdc985640ea5
 
 # Can be used to customize where jenkins.war get downloaded from
 ARG JENKINS_URL=https://repo.jenkins-ci.org/public/org/jenkins-ci/main/jenkins-war/${JENKINS_VERSION}/jenkins-war-${JENKINS_VERSION}.war
